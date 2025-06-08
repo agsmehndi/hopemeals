@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import emailjs from '@emailjs/browser';
 import { toast } from 'react-toastify';
+import { saveStudentApplication } from '../services/firebaseService';
 import {
   School,
   User,
@@ -41,6 +42,10 @@ const SignupPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      // Save to Firebase first
+      await saveStudentApplication(formData);
+      
+      // Then send email
       const templateParams = {
         name: formData.name,
         dob: formData.dob,
@@ -62,7 +67,7 @@ const SignupPage: React.FC = () => {
       setSubmitted(true);
       toast.success('Application submitted successfully!');
     } catch (error) {
-      console.error('EmailJS Error:', error);
+      console.error('Error submitting application:', error);
       toast.error('Failed to submit application. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -320,7 +325,19 @@ const SignupPage: React.FC = () => {
                   review your application and contact you soon.
                 </p>
                 <button
-                  onClick={() => setSubmitted(false)}
+                  onClick={() => {
+                    setSubmitted(false);
+                    setFormData({
+                      name: '',
+                      email: '',
+                      phone: '',
+                      dob: '',
+                      college: '',
+                      year: '',
+                      familyIncome: '',
+                      reason: '',
+                    });
+                  }}
                   className="btn-primary"
                 >
                   Submit Another Application

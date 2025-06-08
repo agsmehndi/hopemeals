@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CreditCard, Heart, Coffee, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { currencies, formatCurrency, convertToINR } from '../utils/currencyConverter';
+import { saveDonationData } from '../services/firebaseService';
+import { toast } from 'react-toastify';
 
 const DonatePage: React.FC = () => {
   useEffect(() => {
@@ -36,27 +38,45 @@ const DonatePage: React.FC = () => {
     setDonationAmount(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const finalAmountInSelectedCurrency = donationAmount || (customAmount ? parseFloat(customAmount) : 0);
     const finalAmountInINR = convertToINR(finalAmountInSelectedCurrency, selectedCurrency);
     
     if (finalAmountInINR >= 300) { // Minimum ₹300 in INR
-      if (isMonthly) {
-        // For monthly subscriptions, redirect to PayPal subscription
-        if (finalAmountInINR >= 3000) {
-          // Multiple meals subscription
-          window.open('https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-88P406032S818564LNBB6X6Q', '_blank');
+      try {
+        // Save donation data to Firebase
+        await saveDonationData({
+          name,
+          email,
+          amount: finalAmountInSelectedCurrency,
+          currency: selectedCurrency,
+          amountInINR: finalAmountInINR,
+          isMonthly,
+          message
+        });
+
+        if (isMonthly) {
+          // For monthly subscriptions, redirect to PayPal subscription
+          if (finalAmountInINR >= 3000) {
+            // Multiple meals subscription
+            window.open('https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-88P406032S818564LNBB6X6Q', '_blank');
+          } else {
+            // Single meal subscription
+            window.open('https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8UA43945A0270800MNBB6VJI', '_blank');
+          }
         } else {
-          // Single meal subscription
-          window.open('https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8UA43945A0270800MNBB6VJI', '_blank');
+          // For one-time donations, redirect to PayPal.me
+          window.open('https://paypal.me/hopemeals', '_blank');
         }
-      } else {
-        // For one-time donations, redirect to PayPal.me
-        window.open('https://paypal.me/hopemeals', '_blank');
+        
+        setFormSubmitted(true);
+        toast.success('Donation data saved successfully!');
+      } catch (error) {
+        console.error('Error saving donation:', error);
+        toast.error('Failed to save donation data. Please try again.');
       }
-      setFormSubmitted(true);
     }
   };
 
@@ -281,7 +301,14 @@ const DonatePage: React.FC = () => {
                     You've been redirected to PayPal to complete your donation. Your contribution will help provide nutritious meals to students in need.
                   </p>
                   <button
-                    onClick={() => setFormSubmitted(false)}
+                    onClick={() => {
+                      setFormSubmitted(false);
+                      setName('');
+                      setEmail('');
+                      setMessage('');
+                      setDonationAmount(null);
+                      setCustomAmount('');
+                    }}
                     className="btn-primary"
                   >
                     Make Another Donation
