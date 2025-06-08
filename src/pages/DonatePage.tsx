@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CreditCard, Heart, Coffee, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { currencies, formatCurrency, convertToINR } from '../utils/currencyConverter';
+import { currencies, formatCurrency, convertToINR, convertFromINR } from '../utils/currencyConverter';
 import { saveDonationData } from '../services/firebaseService';
 import { toast } from 'react-toastify';
 
@@ -188,7 +188,7 @@ const DonatePage: React.FC = () => {
                                   ? 'border-primary-500 bg-primary-50' 
                                   : 'border-neutral-200 hover:border-primary-300'
                               }`}
-                              onClick={() => handleDonationSelect(option.amount)}
+                              onClick={() => handleDonationSelect(convertFromINR(option.amount, selectedCurrency))}
                             >
                               <p className="text-xl font-bold text-neutral-800">
                                 {formatCurrency(option.amount, selectedCurrency)}
